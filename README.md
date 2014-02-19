@@ -2,6 +2,29 @@ php-wfio
 ========
 Unicode(UTF-8 only) filename support for PHP 5.4 on Windows
 
+Install
+-------
+Get binary: https://github.com/kenjiuno/php-wfio/releases
+
+Put php_wfio.dll into php\ext folder
+
+Edit your php.ini
+
+    [PHP]
+    extension_dir = "ext"  ; Uncomment this line
+    extension=php_wfio.dll ; Add this line
+
+Run php.exe -m
+
+    H:\php-5.4.25>php.exe -m
+    [PHP Modules]
+    ...
+    wfio
+    ...
+
+    [Zend Modules]
+
+
 Code Samples
 ------------
 About file access:
