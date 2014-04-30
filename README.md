@@ -77,19 +77,20 @@ No chdir support
 My build options
 ----------------
 
-    rem TS ThreadSafety "Release_TS" config.nice.bat
+rem TS ThreadSafety "Release_TS" config.nice.bat
+
     cscript /nologo configure.js  "--disable-all" "--enable-cli" "--disable-debug" "--enable-com-dotnet" "--with-wfio=shared" "--enable-cgi" "--enable-isapi" %*
 
+rem NTS NonThreadSafety "Release" config.nts.bat
 
-    rem NTS NonThreadSafety "Release" config.nts.bat
     cscript /nologo configure.js  "--disable-all" "--disable-zts" "--enable-cli" "--disable-debug" "--enable-com-dotnet" "--with-wfio=shared" "--enable-cgi" "--enable-isapi" %*
 
+twfio.bat
 
-    twfio.bat
     SET TEST_PHP_EXECUTABLE=H:\php-sdk\php54dev\vc9\x86\php5.4\Release_TS\php.exe
     Release_TS\php.exe run-tests.php ext\wfio\tests
 
+twfio-nts.bat
 
-    twfio-nts.bat
     SET TEST_PHP_EXECUTABLE=H:\php-sdk\php54dev\vc9\x86\php5.4\Release\php.exe
     Release\php.exe run-tests.php ext\wfio\tests
