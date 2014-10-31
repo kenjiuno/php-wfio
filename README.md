@@ -94,3 +94,17 @@ twfio-nts.bat
 
     SET TEST_PHP_EXECUTABLE=H:\php-sdk\php54dev\vc9\x86\php5.4\Release\php.exe
     Release\php.exe run-tests.php ext\wfio\tests
+
+Thread Safety
+-------------
+Invoke "php.exe -i" to check it.
+
+NTS(Non Thread Safety):
+
+    php.exe -i 2> NUL | find "Thread Safety"
+    Thread Safety => disabled
+
+TS(Thread Safety):
+
+    php.exe -i 2> NUL | find "Thread Safety"
+    Thread Safety => enabled
