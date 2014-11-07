@@ -243,6 +243,18 @@ static int php_wfiop_seek(php_stream *stream, off_t offset, int whence, off_t *n
 	return (*newoffs < 0) ? -1 : 0;
 }
 
+static int php_wfiop_stat(php_stream *stream, php_stream_statbuf *ssb TSRMLS_DC)
+{
+	// by php's fstat
+	struct php_wfio_stream_data_t *self = (struct php_wfio_stream_data_t *) stream->abstract;
+
+	if (!self) {
+		return -1;
+	}
+
+	return _fstat(_fileno(self->pf), &ssb->sb);
+}
+
 static int php_wfiop_close(php_stream *stream, int close_handle TSRMLS_DC)
 {
 	struct php_wfio_stream_data_t *self = (struct php_wfio_stream_data_t *) stream->abstract;
@@ -272,7 +284,7 @@ php_stream_ops php_stream_wfio_ops = {
 	"WFIO",
 	php_wfiop_seek, 
 	NULL, /* cast */
-	NULL, /* stat */
+	php_wfiop_stat, /* stat */
 	NULL  /* set_option */
 };
 
@@ -319,6 +331,7 @@ php_stream *php_wfio_stream_opener(php_stream_wrapper *wrapper, char *path, char
 static int php_wfio_url_stater(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC)
 {
 	wchar_t urlw[WFIO_MAX_PATH] = {0};
+	struct _stat64 sb;
 	
 	if (strncmp(url, "wfio://", 7) == 0) {
 		url += 7;
@@ -328,7 +341,22 @@ static int php_wfio_url_stater(php_stream_wrapper *wrapper, char *url, int flags
 	
 	wfio_realpathw(urlw, WFIO_MAX_PATH TSRMLS_CC);
 	
-	return _wstat(urlw, &ssb->sb);
+	if (_wstat64(urlw, &sb) != 0)
+		return -1;
+
+	ssb->sb.st_gid = sb.st_gid;
+	ssb->sb.st_atime = sb.st_atime;
+	ssb->sb.st_ctime = sb.st_ctime;
+	ssb->sb.st_dev = sb.st_dev;
+	ssb->sb.st_ino = sb.st_ino;
+	ssb->sb.st_mode = sb.st_mode;
+	ssb->sb.st_mtime = sb.st_mtime;
+	ssb->sb.st_nlink = sb.st_nlink;
+	ssb->sb.st_rdev = sb.st_rdev;
+	ssb->sb.st_size = sb.st_size;
+	ssb->sb.st_uid = sb.st_uid;
+	
+	return 0;
 }
 
 /* {{{ plain files opendir/readdir implementation */
@@ -368,7 +396,7 @@ static php_stream_ops	php_wfio_dirstream_ops = {
 	"wfio_dir",
 	php_wfio_dirstream_rewind,
 	NULL, /* cast */
-	NULL, /* stat */
+	php_wfiop_stat, /* stat */
 	NULL  /* set_option */
 };
 
