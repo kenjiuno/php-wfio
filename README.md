@@ -1,6 +1,6 @@
 php-wfio
 ========
-Unicode(UTF-8 only) filename support for PHP 5.4 and 5.5 and 5.6 on Windows
+Unicode(UTF-8 only) filename support for PHP 5.4 and 5.5 and 5.6 (x86 and x64) on Windows
 
 Install
 -------
