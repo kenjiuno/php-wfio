@@ -193,7 +193,7 @@ static int wfio_realpathw(wchar_t *relpath, size_t relpath_len TSRMLS_DC) {
 	p = VCWD_GETCWD(workdir, MAXPATHLEN);
 
 	if (p != NULL) {
-		MultiByteToWideChar(CP_UTF8, 0, workdir, MAXPATHLEN, workdirw, MAX_PATH);
+		MultiByteToWideChar(CP_ACP, 0, workdir, MAXPATHLEN, workdirw, MAX_PATH);
 		PathCombineW(newpathw, workdirw, relpath);
 		wcsncpy(relpath, newpathw, relpath_len);
 		return 0;
