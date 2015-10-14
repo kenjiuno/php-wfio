@@ -230,7 +230,7 @@ static size_t php_wfiop_write(php_stream *stream, const char *buf, size_t count 
 	return (wrote < 0) ? 0 : wrote;
 }
 
-static int php_wfiop_seek(php_stream *stream, off_t offset, int whence, off_t *newoffs TSRMLS_DC)
+static int php_wfiop_seek(php_stream *stream, zend_off_t offset, int whence, zend_off_t *newoffs TSRMLS_DC)
 {
 	struct php_wfio_stream_data_t *self = (struct php_wfio_stream_data_t *) stream->abstract;
 
@@ -238,7 +238,7 @@ static int php_wfiop_seek(php_stream *stream, off_t offset, int whence, off_t *n
 
 	_fseeki64(self->pf, offset, whence);
 	
-	*newoffs = (off_t) _ftelli64(self->pf);
+	*newoffs = (zend_off_t) _ftelli64(self->pf);
 
 	return (*newoffs < 0) ? -1 : 0;
 }
@@ -247,12 +247,29 @@ static int php_wfiop_stat(php_stream *stream, php_stream_statbuf *ssb TSRMLS_DC)
 {
 	// by php's fstat
 	struct php_wfio_stream_data_t *self = (struct php_wfio_stream_data_t *) stream->abstract;
+	struct _stat32 sb;
+	int r;
 
 	if (!self) {
 		return -1;
 	}
 
-	return _fstat(_fileno(self->pf), &ssb->sb);
+	r = _fstat(_fileno(self->pf), &sb);
+	if (r == 0) {
+		ssb->sb.st_gid = sb.st_gid;
+		ssb->sb.st_atime = sb.st_atime;
+		ssb->sb.st_ctime = sb.st_ctime;
+		ssb->sb.st_dev = sb.st_dev;
+		ssb->sb.st_ino = sb.st_ino;
+		ssb->sb.st_mode = sb.st_mode;
+		ssb->sb.st_mtime = sb.st_mtime;
+		ssb->sb.st_nlink = sb.st_nlink;
+		ssb->sb.st_rdev = sb.st_rdev;
+		ssb->sb.st_size = sb.st_size;
+		ssb->sb.st_uid = sb.st_uid;
+	}
+	
+	return r;
 }
 
 static int php_wfiop_close(php_stream *stream, int close_handle TSRMLS_DC)
@@ -288,8 +305,8 @@ php_stream_ops php_stream_wfio_ops = {
 	NULL  /* set_option */
 };
 
-php_stream *php_wfio_stream_opener(php_stream_wrapper *wrapper, char *path, char *mode, int options, 
-                                  char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
+php_stream *php_wfio_stream_opener(php_stream_wrapper *wrapper, const char *path, const char *mode, int options, 
+                                  zend_string **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
 {
 	struct php_wfio_stream_data_t *self;
 	php_stream *stream;
@@ -328,7 +345,7 @@ php_stream *php_wfio_stream_opener(php_stream_wrapper *wrapper, char *path, char
 	return NULL;
 }
 
-static int php_wfio_url_stater(php_stream_wrapper *wrapper, char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC)
+static int php_wfio_url_stater(php_stream_wrapper *wrapper, const char *url, int flags, php_stream_statbuf *ssb, php_stream_context *context TSRMLS_DC)
 {
 	wchar_t urlw[WFIO_MAX_PATH] = {0};
 	struct _stat64 sb;
@@ -345,15 +362,15 @@ static int php_wfio_url_stater(php_stream_wrapper *wrapper, char *url, int flags
 		return -1;
 
 	ssb->sb.st_gid = sb.st_gid;
-	ssb->sb.st_atime = sb.st_atime;
-	ssb->sb.st_ctime = sb.st_ctime;
+	ssb->sb.st_atime = (time_t)sb.st_atime;
+	ssb->sb.st_ctime = (time_t)sb.st_ctime;
 	ssb->sb.st_dev = sb.st_dev;
 	ssb->sb.st_ino = sb.st_ino;
 	ssb->sb.st_mode = sb.st_mode;
-	ssb->sb.st_mtime = sb.st_mtime;
+	ssb->sb.st_mtime = (time_t)sb.st_mtime;
 	ssb->sb.st_nlink = sb.st_nlink;
 	ssb->sb.st_rdev = sb.st_rdev;
-	ssb->sb.st_size = sb.st_size;
+	ssb->sb.st_size = (off_t)sb.st_size;
 	ssb->sb.st_uid = sb.st_uid;
 	
 	return 0;
@@ -384,7 +401,7 @@ static int php_wfio_dirstream_close(php_stream *stream, int close_handle TSRMLS_
 	return closedirw((DIRW *)stream->abstract);
 }
 
-static int php_wfio_dirstream_rewind(php_stream *stream, off_t offset, int whence, off_t *newoffs TSRMLS_DC)
+static int php_wfio_dirstream_rewind(php_stream *stream, zend_off_t offset, int whence, zend_off_t *newoffs TSRMLS_DC)
 {
 	rewinddirw((DIRW *)stream->abstract);
 	return 0;
@@ -400,8 +417,8 @@ static php_stream_ops	php_wfio_dirstream_ops = {
 	NULL  /* set_option */
 };
 
-static php_stream *php_wfio_dir_opener(php_stream_wrapper *wrapper, char *path, char *mode,
-		int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
+static php_stream *php_wfio_dir_opener(php_stream_wrapper *wrapper, const char *path, const char *mode,
+		int options, zend_string **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
 {
 	DIRW *dir;
 	php_stream *stream;
@@ -436,7 +453,7 @@ static php_stream *php_wfio_dir_opener(php_stream_wrapper *wrapper, char *path, 
 	return stream;
 }
 
-static int php_wfio_unlink(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC)
+static int php_wfio_unlink(php_stream_wrapper *wrapper, const char *url, int options, php_stream_context *context TSRMLS_DC)
 {
 	int ret;
 	wchar_t urlw[WFIO_MAX_PATH] = {0};
@@ -463,7 +480,7 @@ static int php_wfio_unlink(php_stream_wrapper *wrapper, char *url, int options, 
 	return 1;
 }
 
-static int php_wfio_rename(php_stream_wrapper *wrapper, char *url_from, char *url_to, int options, php_stream_context *context TSRMLS_DC)
+static int php_wfio_rename(php_stream_wrapper *wrapper, const char *url_from, const char *url_to, int options, php_stream_context *context TSRMLS_DC)
 {
 	int ret;
 	wchar_t urlw_from[WFIO_MAX_PATH] = {0};
@@ -500,7 +517,7 @@ static int php_wfio_rename(php_stream_wrapper *wrapper, char *url_from, char *ur
 	return 1;
 }
 
-static int php_wfio_mkdir(php_stream_wrapper *wrapper, char *dir, int mode, int options, php_stream_context *context TSRMLS_DC)
+static int php_wfio_mkdir(php_stream_wrapper *wrapper, const char *dir, int mode, int options, php_stream_context *context TSRMLS_DC)
 {
 	int ret, recursive = options & PHP_STREAM_MKDIR_RECURSIVE;
 	wchar_t dirw[WFIO_MAX_PATH] = {0};
@@ -523,7 +540,7 @@ static int php_wfio_mkdir(php_stream_wrapper *wrapper, char *dir, int mode, int 
 	}
 }
 
-static int php_wfio_rmdir(php_stream_wrapper *wrapper, char *url, int options, php_stream_context *context TSRMLS_DC)
+static int php_wfio_rmdir(php_stream_wrapper *wrapper, const char *url, int options, php_stream_context *context TSRMLS_DC)
 {
 	int url_len = strlen(url);
 	wchar_t urlw[WFIO_MAX_PATH] = {0};
@@ -585,7 +602,7 @@ PHP_FUNCTION(wfio_getcwd8)
 	if (p != NULL) {
 		MultiByteToWideChar(CP_ACP, 0, buffer, MAXPATHLEN, pathw, WFIO_MAX_PATH);
 		WideCharToMultiByte(CP_UTF8, 0, pathw, -1, path, MAXPATHLEN, NULL, NULL);
-		RETURN_STRING(path, 1);
+		RETURN_STRING(path);
 	} else {
 		RETURN_FALSE;
 	}
@@ -606,7 +623,7 @@ PHP_FUNCTION(wfio_path2utf8)
 	MultiByteToWideChar(CP_ACP, 0, path, path_len, pathw, WFIO_MAX_PATH);
 	WideCharToMultiByte(CP_UTF8, 0, pathw, -1, fp_path, MAXPATHLEN, NULL, NULL);
 
-	RETURN_STRING(fp_path, 1);
+	RETURN_STRING(fp_path);
 }
 
 PHP_FUNCTION(wfio_path_from_utf8)
@@ -627,7 +644,7 @@ PHP_FUNCTION(wfio_path_from_utf8)
 	if (fUsedDefaultChar) {
 		RETURN_FALSE;
 	}
-	RETURN_STRING(fp_path, 1);
+	RETURN_STRING(fp_path);
 }
 
 PHP_FUNCTION(wfio_path_combine)
@@ -657,7 +674,7 @@ PHP_FUNCTION(wfio_path_combine)
 
 	WideCharToMultiByte(CP_UTF8, 0, destw, -1, dest, MAXPATHLEN, NULL, NULL);
 
-	RETURN_STRING(dest, 1);
+	RETURN_STRING(dest);
 }
 
 static php_stream_wrapper_ops wfio_stream_wops = {
