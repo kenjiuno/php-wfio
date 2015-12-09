@@ -230,7 +230,11 @@ static size_t php_wfiop_write(php_stream *stream, const char *buf, size_t count 
 	return (wrote < 0) ? 0 : wrote;
 }
 
+#ifdef ZEND_ENGINE_3
 static int php_wfiop_seek(php_stream *stream, zend_off_t offset, int whence, zend_off_t *newoffs TSRMLS_DC)
+#else
+static int php_wfiop_seek(php_stream *stream,      off_t offset, int whence,      off_t *newoffs TSRMLS_DC)
+#endif
 {
 	struct php_wfio_stream_data_t *self = (struct php_wfio_stream_data_t *) stream->abstract;
 
@@ -238,7 +242,11 @@ static int php_wfiop_seek(php_stream *stream, zend_off_t offset, int whence, zen
 
 	_fseeki64(self->pf, offset, whence);
 	
+#ifdef ZEND_ENGINE_3
 	*newoffs = (zend_off_t) _ftelli64(self->pf);
+#else
+	*newoffs = (off_t) _ftelli64(self->pf);
+#endif
 
 	return (*newoffs < 0) ? -1 : 0;
 }
@@ -305,8 +313,13 @@ php_stream_ops php_stream_wfio_ops = {
 	NULL  /* set_option */
 };
 
+#ifdef ZEND_ENGINE_3
 php_stream *php_wfio_stream_opener(php_stream_wrapper *wrapper, const char *path, const char *mode, int options, 
                                   zend_string **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
+#else
+php_stream *php_wfio_stream_opener(php_stream_wrapper *wrapper, const char *path, const char *mode, int options, 
+                                  char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
+#endif
 {
 	struct php_wfio_stream_data_t *self;
 	php_stream *stream;
@@ -326,7 +339,7 @@ php_stream *php_wfio_stream_opener(php_stream_wrapper *wrapper, const char *path
 	
 	self = emalloc(sizeof(*self));
 	self->pf = _wfopen(pathw, modew);
-
+	
 	if (self->pf != NULL) {
 		stream = php_stream_alloc_rel(&php_stream_wfio_ops, self, 0, mode);
 		if (stream) {
@@ -349,12 +362,17 @@ static int php_wfio_url_stater(php_stream_wrapper *wrapper, const char *url, int
 {
 	wchar_t urlw[WFIO_MAX_PATH] = {0};
 	struct _stat64 sb;
+	int cch;
 	
 	if (strncmp(url, "wfio://", 7) == 0) {
 		url += 7;
 	}
 
-	MultiByteToWideChar(CP_UTF8, 0, url, -1, urlw, WFIO_MAX_PATH);
+	cch = strlen(url);
+	if (cch > 3 && url[cch -1] == '/' && url[cch -2] != ':')
+		cch--;
+
+	MultiByteToWideChar(CP_UTF8, 0, url, cch, urlw, WFIO_MAX_PATH);
 	
 	wfio_realpathw(urlw, WFIO_MAX_PATH TSRMLS_CC);
 	
@@ -401,7 +419,11 @@ static int php_wfio_dirstream_close(php_stream *stream, int close_handle TSRMLS_
 	return closedirw((DIRW *)stream->abstract);
 }
 
+#ifdef ZEND_ENGINE_3
 static int php_wfio_dirstream_rewind(php_stream *stream, zend_off_t offset, int whence, zend_off_t *newoffs TSRMLS_DC)
+#else
+static int php_wfio_dirstream_rewind(php_stream *stream,      off_t offset, int whence,      off_t *newoffs TSRMLS_DC)
+#endif
 {
 	rewinddirw((DIRW *)stream->abstract);
 	return 0;
@@ -417,8 +439,13 @@ static php_stream_ops	php_wfio_dirstream_ops = {
 	NULL  /* set_option */
 };
 
+#ifdef ZEND_ENGINE_3
 static php_stream *php_wfio_dir_opener(php_stream_wrapper *wrapper, const char *path, const char *mode,
-		int options, zend_string **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
+                                       int options, zend_string **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
+#else
+static php_stream *php_wfio_dir_opener(php_stream_wrapper *wrapper, const char *path, const char *mode,
+                                       int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC)
+#endif
 {
 	DIRW *dir;
 	php_stream *stream;
@@ -602,7 +629,11 @@ PHP_FUNCTION(wfio_getcwd8)
 	if (p != NULL) {
 		MultiByteToWideChar(CP_ACP, 0, buffer, MAXPATHLEN, pathw, WFIO_MAX_PATH);
 		WideCharToMultiByte(CP_UTF8, 0, pathw, -1, path, MAXPATHLEN, NULL, NULL);
+#ifdef ZEND_ENGINE_3
 		RETURN_STRING(path);
+#else
+		RETURN_STRING(path, 1);
+#endif
 	} else {
 		RETURN_FALSE;
 	}
@@ -623,7 +654,11 @@ PHP_FUNCTION(wfio_path2utf8)
 	MultiByteToWideChar(CP_ACP, 0, path, path_len, pathw, WFIO_MAX_PATH);
 	WideCharToMultiByte(CP_UTF8, 0, pathw, -1, fp_path, MAXPATHLEN, NULL, NULL);
 
+#ifdef ZEND_ENGINE_3
 	RETURN_STRING(fp_path);
+#else
+	RETURN_STRING(fp_path, 1);
+#endif
 }
 
 PHP_FUNCTION(wfio_path_from_utf8)
@@ -644,7 +679,11 @@ PHP_FUNCTION(wfio_path_from_utf8)
 	if (fUsedDefaultChar) {
 		RETURN_FALSE;
 	}
+#ifdef ZEND_ENGINE_3
 	RETURN_STRING(fp_path);
+#else
+	RETURN_STRING(fp_path, 1);
+#endif
 }
 
 PHP_FUNCTION(wfio_path_combine)
@@ -674,7 +713,11 @@ PHP_FUNCTION(wfio_path_combine)
 
 	WideCharToMultiByte(CP_UTF8, 0, destw, -1, dest, MAXPATHLEN, NULL, NULL);
 
+#ifdef ZEND_ENGINE_3
 	RETURN_STRING(dest);
+#else
+	RETURN_STRING(dest, 1);
+#endif
 }
 
 static php_stream_wrapper_ops wfio_stream_wops = {
