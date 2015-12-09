@@ -452,7 +452,7 @@ static php_stream *php_wfio_dir_opener(php_stream_wrapper *wrapper, const char *
 #endif
 {
 	DIRW *dir;
-	php_stream *stream;
+	php_stream *stream = NULL;
 	wchar_t pathw[WFIO_MAX_PATH] = {0};
 
 	if (strncmp(path, "wfio://", 7) == 0) {
