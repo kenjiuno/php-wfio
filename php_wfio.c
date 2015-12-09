@@ -255,7 +255,11 @@ static int php_wfiop_stat(php_stream *stream, php_stream_statbuf *ssb TSRMLS_DC)
 {
 	// by php's fstat
 	struct php_wfio_stream_data_t *self = (struct php_wfio_stream_data_t *) stream->abstract;
+#ifdef _WIN64
+	struct _stat64i32 sb;
+#else
 	struct _stat32 sb;
+#endif
 	int r;
 
 	if (!self) {
