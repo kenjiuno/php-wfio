@@ -1,6 +1,6 @@
 php-wfio
 ========
-Unicode(UTF-8 only) filename support for PHP 5.4 and 5.5 and 5.6 (x86 and x64) on Windows
+Unicode(UTF-8 only) filename support for PHP 5.4, 5.5, 5.6, and 7.0 (x86 and x64) on Windows
 
 Install
 -------
@@ -53,10 +53,14 @@ dirstream is also supported:
     stat("wfio://filename")
     fclose
     
+    is_file
+    is_dir
+    file_exists
+    
     opendir("wfio://C:\\Windows")
     readdir
     closedir
-    
+
     rename("wfio://oldname", "wfio://newname")
     copy("wfio://source", "wfio://dest")
     unlink("wfio://filename")
@@ -65,12 +69,13 @@ dirstream is also supported:
     
     scandir("wfio://directory")
     file_get_contents("wfio://filename")
-    file_put_contents("wfio://filename")
+    file_put_contents("wfio://filename", "...")
 
 No chdir support
 ----------------
 
-* "chdir" is not supported! So, keep your fullpath always like "wfio://C:\\dir1\\dir2\\dir3\\filename".
+* Current directory is process's property.
+* So, keep your path to fullpath always like "wfio://C:\\dir1\\dir2\\dir3\\filename".
 * Use wfio_getcwd8 for getting current directory
 * Use wfio_path_combine to hold your subdir in fullpath format.
 
