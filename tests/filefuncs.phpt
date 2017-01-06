@@ -45,7 +45,7 @@ echo filesize($fp1) - filesize($fp2);
 echo "\n";
 
 echo "filetype ";
-echo filetype($fp1) - filetype($fp2);
+echo strcmp(filetype($fp1), filetype($fp2));
 echo "\n";
 
 echo "unlink ";

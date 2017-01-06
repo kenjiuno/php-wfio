@@ -1,7 +1,7 @@
 --TEST--
-Whether wfio can detect correct workdir, when workdir contains non-ascii chars.
+Whether wfio can detect correct workdir, when workdir contains non-ascii chars. (php <= 7.0.x)
 --SKIPIF--
-<?php if (!extension_loaded("wfio")) print "skip"; ?>
+<?php if (!extension_loaded("wfio") || version_compare(PHP_VERSION, '7.1.0') >= 0) print "skip"; ?>
 --FILE--
 <?php 
 echo "mkdir ";
