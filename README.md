@@ -4,6 +4,19 @@ Unicode(UTF-8 only) filename support for PHP 5.4, 5.5, 5.6, and 7.0 (x86 and x64
 
 **Note:** now PHP 7.1 can handle UTF-8 filepath by setting [internal_encoding](http://php.net/manual/en/ini.core.php#ini.internal-encoding) to UTF-8.
 
+Edit your php.ini:
+
+```ini
+; PHP's default character set is set to UTF-8.
+; http://php.net/default-charset
+default_charset = "UTF-8"
+
+; PHP internal character encoding is set to empty.
+; If empty, default_charset is used.
+; http://php.net/internal-encoding
+;internal_encoding =
+```
+
 Install
 -------
 Get binary: https://github.com/kenjiuno/php-wfio/releases
